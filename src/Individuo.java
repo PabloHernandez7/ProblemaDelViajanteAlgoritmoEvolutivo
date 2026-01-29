@@ -11,6 +11,10 @@ public class Individuo {
         permutaciones.addAll(list);
         this.permutar();
     }
+
+    public int getElementoPermutaciones(int pos){
+        return this.permutaciones.get(pos);    
+    }
     
     public List<Integer> getCopiaPermutaciones() {
         List<Integer> list = new ArrayList<>();
