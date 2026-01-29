@@ -1,3 +1,5 @@
+import java.util.Random;
+
 public interface CruceInterface {
-    public void cruzar(Individuo ind);
+    public Individuo cruzar(Individuo ind1, Individuo ind2, Random rnd);
 }
