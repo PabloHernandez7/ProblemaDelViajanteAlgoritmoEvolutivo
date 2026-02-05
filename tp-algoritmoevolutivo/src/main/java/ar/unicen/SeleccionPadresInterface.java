@@ -1,5 +1,5 @@
 package ar.unicen;
 
-public interface SeleccionInterface {
+public interface SeleccionPadresInterface {
     public void select();
 }

@@ -43,6 +43,7 @@ public class CruceOrden implements CruceInterface{
                 indexPadre = (indexPadre + 1) % sizePermutacion; //Con esto recorro ciclícamente si el indice terminó de recorrer la lista
             }    
         }
+        return ind2;
 
     }
 }

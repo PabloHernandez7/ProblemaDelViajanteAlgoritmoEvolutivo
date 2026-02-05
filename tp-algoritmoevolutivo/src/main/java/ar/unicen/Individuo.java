@@ -59,7 +59,7 @@ public class Individuo {
             int column = permutaciones.get(i+1);
             aux = aux + matriz[fila][column];
         }
-        return aux;
+        return 1/aux;
     }
 
     public int getSizePermutacion(){
