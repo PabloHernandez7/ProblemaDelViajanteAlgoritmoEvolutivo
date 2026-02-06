@@ -18,9 +18,6 @@ public class CruceOrden implements CruceInterface{
             pc1 = aux;
         }
 
-        System.err.println("PC1: " + pc1);
-        System.err.println("PC2: " + pc2);
-
         List<Integer> subList = ind1.getCopiaSubList(pc1, pc2);
         List<Integer> permutacionesHijo = new ArrayList<>(Collections.nCopies(sizePermutacion, -1));
         
@@ -31,8 +28,8 @@ public class CruceOrden implements CruceInterface{
             indexSubList++;
         }
 
-        int indexPadre = pc2+1;
-        int indexHijo = pc2+1;
+        int indexPadre = (pc2 + 1) % sizePermutacion;
+        int indexHijo  = (pc2 + 1) % sizePermutacion;
         for (int i=0; i < (sizePermutacion-subList.size()); i++){
             boolean insert = false;
             while (!insert) {
