@@ -6,7 +6,7 @@ import java.util.List;
 public class CruceOrden implements CruceInterface{
 
     @Override
-    public void cruzar(Individuo ind1, Individuo ind2, Random rnd){
+    public Individuo cruzar(Individuo ind1, Individuo ind2, Random rnd){
         int sizePermutacion = ind1.getSizePermutacion();
         int pc1 = rnd.nextInt(sizePermutacion);
         int pc2 = rnd.nextInt(sizePermutacion);
@@ -17,6 +17,9 @@ public class CruceOrden implements CruceInterface{
             pc2 = pc1;
             pc1 = aux;
         }
+
+        System.err.println("PC1: " + pc1);
+        System.err.println("PC2: " + pc2);
 
         List<Integer> subList = ind1.getCopiaSubList(pc1, pc2);
         List<Integer> permutacionesHijo = new ArrayList<>(Collections.nCopies(sizePermutacion, -1));
@@ -41,5 +44,8 @@ public class CruceOrden implements CruceInterface{
                 indexPadre = (indexPadre + 1) % sizePermutacion; //Con esto recorro ciclícamente si el indice terminó de recorrer la lista
             }    
         }
+
+        Individuo hijo = new Individuo(permutacionesHijo);
+        return hijo;
     }
 }
