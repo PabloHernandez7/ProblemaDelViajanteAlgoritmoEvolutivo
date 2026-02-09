@@ -8,8 +8,8 @@ public class Individuo {
     private long fitness;
 
     public Individuo(List<Integer> list) {
+        permutaciones = new ArrayList<>();
         permutaciones.addAll(list);
-        this.permutar();
     }
 
     public int getElementoPermutaciones(int pos){
