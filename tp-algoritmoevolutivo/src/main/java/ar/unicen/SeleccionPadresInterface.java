@@ -1,5 +1,7 @@
 package ar.unicen;
 
+import java.util.List;
+
 public interface SeleccionPadresInterface {
-    public void select();
+    public List<Individuo> select(List<Individuo> poblacion, int[][] matriz);
 }

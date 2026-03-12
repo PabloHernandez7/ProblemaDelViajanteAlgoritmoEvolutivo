@@ -1,5 +1,4 @@
 package ar.unicen;
-
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,8 +29,8 @@ public class CruceOrden implements CruceInterface{
             indexSubList++;
         }
 
-        int indexPadre = pc2+1;
-        int indexHijo = pc2+1;
+        int indexPadre = (pc2 + 1) % sizePermutacion;
+        int indexHijo  = (pc2 + 1) % sizePermutacion;
         for (int i=0; i < (sizePermutacion-subList.size()); i++){
             boolean insert = false;
             while (!insert) {
@@ -43,7 +42,8 @@ public class CruceOrden implements CruceInterface{
                 indexPadre = (indexPadre + 1) % sizePermutacion; //Con esto recorro ciclícamente si el indice terminó de recorrer la lista
             }    
         }
-        return ind2;
 
+        Individuo hijo = new Individuo(permutacionesHijo);
+        return hijo;
     }
 }

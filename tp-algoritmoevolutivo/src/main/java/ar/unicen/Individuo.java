@@ -1,5 +1,4 @@
 package ar.unicen;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -10,8 +9,8 @@ public class Individuo {
     private long fitness;
 
     public Individuo(List<Integer> list) {
-        this.permutaciones = new ArrayList<>(list);
-        //this.permutar();
+        permutaciones = new ArrayList<>();
+        permutaciones.addAll(list);
     }
 
     public int getElementoPermutaciones(int pos){
@@ -35,7 +34,7 @@ public class Individuo {
     public void setSublistPermutacion(List<Integer> subList, int i, int j){
         for (int inic = i; inic <= j; inic++ ){           
             int segundoElemento = subList.get(0);
-            permutaciones.set(inic, segundoElemento);
+            permutaciones.set(i, segundoElemento);
             subList.remove(0);
         }
     }
@@ -48,6 +47,7 @@ public class Individuo {
     public long getFitness(int[][] matriz){
         if (!flagFitness) {
             fitness = this.calcularCosto(matriz);
+            this.flagFitness = true;
         } 
         return fitness;
     }
@@ -59,7 +59,7 @@ public class Individuo {
             int column = permutaciones.get(i+1);
             aux = aux + matriz[fila][column];
         }
-        return 1/aux;
+        return aux;
     }
 
     public int getSizePermutacion(){

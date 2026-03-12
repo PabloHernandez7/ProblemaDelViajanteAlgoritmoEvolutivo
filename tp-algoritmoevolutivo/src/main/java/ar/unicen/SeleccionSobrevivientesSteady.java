@@ -39,7 +39,7 @@ public class SeleccionSobrevivientesSteady implements SeleccionSobrevivientesInt
     private List<Individuo> order(List<Individuo> poblacion,int[][] matriz){
         List<Individuo> copia = new ArrayList<>(poblacion);
         Comparator<Individuo> comparador = Comparator.comparingDouble(i -> i.getFitness(matriz)); //es un lamda como ordena?
-        copia.sort(comparador.reversed()); //mejor fitness (mayor) primero
+        copia.sort(comparador); //mejor fitness (mayor) primero
         return copia;
     }
 }
