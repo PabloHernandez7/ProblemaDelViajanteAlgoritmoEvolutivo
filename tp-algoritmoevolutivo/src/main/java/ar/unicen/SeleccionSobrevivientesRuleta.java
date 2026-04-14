@@ -9,8 +9,13 @@ public class SeleccionSobrevivientesRuleta implements SeleccionSobrevivientesInt
     public List<Individuo> select(List<Individuo> poblacion, List<Individuo> hijos, int n, int[][] matr) {
         List<Individuo> todos = new ArrayList<>(poblacion);
         todos.addAll(hijos);
+        
+        // CORRECCIÓN 1: El Comparator. 
+        // Dividir por el "total" no cambia el orden de los elementos porque el total es igual para todos.
+        // Ordenar por (1.0 / fitness) da EXACTAMENTE el mismo orden que tu código original, 
+        // pero evita iterar toda la lista en cada comparación del sort.
         Comparator<Individuo> comp = Comparator.comparingDouble(
-                ind -> this.probaAcumulada(ind, this.sumatoriaFitness(todos, matr), matr)
+                ind -> 1.0 / ind.getFitness(matr)
         );
         todos.sort(comp);
 
@@ -26,24 +31,23 @@ public class SeleccionSobrevivientesRuleta implements SeleccionSobrevivientesInt
 
             // Si total == 0, no podés hacer ruleta proporcional
             if (total <= 0.0) {
-                // fallback mínimo: elige el primero (o random uniforme si preferís)
                 Individuo elegido = todos.get(0);
                 seleccionados.add(elegido);
                 todos.remove(0);
-                todos.sort(comp);
+                // CORRECCIÓN 2: Se eliminó el "todos.sort(comp);" de aquí.
                 continue;
             }
 
             while (!encontrado && i < todos.size()) {
                 Individuo ind = todos.get(i);
 
-                // Convertimos a probabilidad
+                // Convertimos a probabilidad (Tu código original)
                 prob_acum += this.probaAcumulada(ind, total, matr);
                 if (prob <= prob_acum) {
                     seleccionados.add(ind);
                     encontrado = true;
                     todos.remove(i);
-                    todos.sort(comp);
+                    // CORRECCIÓN 2: Se eliminó el "todos.sort(comp);" de aquí.
                 } else {
                     i++;
                 }
@@ -54,13 +58,14 @@ public class SeleccionSobrevivientesRuleta implements SeleccionSobrevivientesInt
                 Individuo ind = todos.get(todos.size() - 1);
                 seleccionados.add(ind);
                 todos.remove(todos.size() - 1);
-                todos.sort(comp);
+                // CORRECCIÓN 2: Se eliminó el "todos.sort(comp);" de aquí.
             }
         }
 
         return seleccionados;
     }
 
+    // Tus métodos originales se mantienen intactos
     private Double probaAcumulada(Individuo i, Double total, int[][] matriz) {
         return (1.0 / i.getFitness(matriz)) / total;
     }
