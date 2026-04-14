@@ -35,7 +35,7 @@ public class AlgoritmoViajante {
     public ResultadoCorrida ejecutar(List<Individuo> poblacionInicial) {
         List<Individuo> poblacion = new ArrayList<>(poblacionInicial);
         List<Long> historial = new ArrayList<>();
-        long solucionesGeneradas = poblacionInicial.size(); // Población inicial [cite: 47]
+        long solucionesGeneradas = poblacionInicial.size();
 
         for (int gen = 0; gen < maxGen; gen++) {
             List<Individuo> padres = seleccionPadres.select(poblacion, matrizCostos);
@@ -44,7 +44,7 @@ public class AlgoritmoViajante {
             for (int i = 0; i < padres.size() - 1; i += 2) {
                 if (rm.nextDouble() < probCruce) {
                     hijos.add(cruce.cruzar(padres.get(i), padres.get(i + 1), rm));
-                    solucionesGeneradas++; // Nueva solución generada [cite: 47]
+                    solucionesGeneradas++;
                 } else {
                     hijos.add(padres.get(i));
                     hijos.add(padres.get(i + 1));
@@ -54,7 +54,6 @@ public class AlgoritmoViajante {
             for (Individuo hijo : hijos) {
                 if (rm.nextDouble() < probMut) {
                     mutacion.mutate(hijo, rm);
-                    // Si la mutación es in-place, se considera la misma solución modificada.
                 }
             }
 
