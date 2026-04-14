@@ -56,10 +56,8 @@ public class Main {
             // Generamos una población inicial nueva e independiente para cada corrida
             List<Individuo> poblacionInicial = generarPoblacionInicial(nCities, nInd);
 
-            // Instanciamos el algoritmo nuevamente para asegurar que el estado (generaciones) empiece de cero
             AlgoritmoViajante algoritmo = new AlgoritmoViajante(
                     maxGen, probMut, probCruce, selPadres, cruce, mutacion, selSobrevivientes, matrizCostos, rm); 
-                    // NOTA: Si modificaste tu constructor para pedir 'rm' al final, agrégalo aquí.
 
             ResultadoCorrida resultado = algoritmo.ejecutar(poblacionInicial);
             todasLasCorridas.add(resultado);
@@ -70,7 +68,7 @@ public class Main {
         System.out.println("Evaluación finalizada con éxito. Excel generado.");
     }
 
-    // --- MÉTODOS AUXILIARES ---
+    // MÉTODOS AUXILIARES
 
     /**
      * Genera una lista de N individuos con permutaciones aleatorias.
