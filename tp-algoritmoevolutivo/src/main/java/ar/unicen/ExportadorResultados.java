@@ -8,54 +8,101 @@ import java.util.List;
 
 public class ExportadorResultados {
 
-    public static void exportarAExcel(List<Individuo> poblacion, Individuo mejor, int[][] matriz,
-            String nombreArchivo) {
+    public static void exportarConsolidado(List<ResultadoCorrida> corridas, int[][] matriz, String nombreArchivo) {
         try (Workbook workbook = new XSSFWorkbook()) {
-            // 1. Hoja de Población Final
-            Sheet sheetPoblacion = workbook.createSheet("Población Final");
-            String[] columnasPoblacion = { "ID", "Costo (Fitness)", "Ruta Completa" };
+            
+            // --- HOJA 1: RESUMEN ESTADÍSTICO (Ranking) ---
+            Sheet sheetResumen = workbook.createSheet("Resumen Estadístico");
+            Row header = sheetResumen.createRow(0);
+            header.createCell(0).setCellValue("Métrica Evaluada");
+            header.createCell(1).setCellValue("Valor");
 
-            Row headerRow = sheetPoblacion.createRow(0);
-            for (int i = 0; i < columnasPoblacion.length; i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(columnasPoblacion[i]);
+            // 1. Calcular Fitness Promedio
+            double promedioFitness = corridas.stream().mapToLong(ResultadoCorrida::getMejorFitness).average().orElse(0);
+            
+            // 2. Calcular Desviación Estándar (Muestral)
+            double sumaDiferenciasCuadradas = 0.0;
+            for (ResultadoCorrida rc : corridas) {
+                sumaDiferenciasCuadradas += Math.pow(rc.getMejorFitness() - promedioFitness, 2);
+            }
+            double desviacionEstandar = 0.0;
+            if (corridas.size() > 1) {
+                // Dividimos por N-1 para la desviación estándar de una muestra
+                desviacionEstandar = Math.sqrt(sumaDiferenciasCuadradas / (corridas.size() - 1));
             }
 
-            int rowNum = 1;
-            for (int i = 0; i < poblacion.size(); i++) {
-                Individuo ind = poblacion.get(i);
-                Row row = sheetPoblacion.createRow(rowNum++);
-                row.createCell(0).setCellValue(i + 1);
-                row.createCell(1).setCellValue(ind.getFitness(matriz));
-                row.createCell(2).setCellValue(obtenerRutaString(ind));
+            // 3. Calcular Tiempo de Cómputo (Promedio de soluciones generadas)
+            double promedioSoluciones = corridas.stream().mapToLong(ResultadoCorrida::getSolucionesGeneradas).average().orElse(0);
+
+            // Escribir los resultados en la hoja
+            sheetResumen.createRow(1).createCell(0).setCellValue("Valor de Fitness Promedio");
+            sheetResumen.getRow(1).createCell(1).setCellValue(promedioFitness);
+            
+            sheetResumen.createRow(2).createCell(0).setCellValue("Desviación Estándar (Fitness)");
+            sheetResumen.getRow(2).createCell(1).setCellValue(desviacionEstandar);
+
+            sheetResumen.createRow(3).createCell(0).setCellValue("Tiempo de Cómputo (Promedio Soluciones)");
+            sheetResumen.getRow(3).createCell(1).setCellValue(promedioSoluciones);
+            
+            sheetResumen.autoSizeColumn(0);
+            sheetResumen.autoSizeColumn(1);
+
+            // --- HOJA 2: EVOLUCIÓN DEL FITNESS ---
+            Sheet sheetEvolucion = workbook.createSheet("Evolución Fitness");
+            Row headerEvo = sheetEvolucion.createRow(0);
+            headerEvo.createCell(0).setCellValue("Generación");
+            
+            for (int c = 0; c < corridas.size(); c++) {
+                headerEvo.createCell(c + 1).setCellValue("Corrida " + (c + 1));
             }
 
-            // 2. Hoja del Mejor Individuo
-            Sheet sheetMejor = workbook.createSheet("Mejor Resultado");
-            Row rowMejorCosto = sheetMejor.createRow(0);
-            rowMejorCosto.createCell(0).setCellValue("Costo Total:");
-            rowMejorCosto.createCell(1).setCellValue(mejor.getFitness(matriz));
-
-            Row rowRutaHeader = sheetMejor.createRow(2);
-            rowRutaHeader.createCell(0).setCellValue("Orden de Visita");
-            rowRutaHeader.createCell(1).setCellValue("ID Ciudad");
-
-            for (int i = 0; i < mejor.getSizePermutacion(); i++) {
-                Row row = sheetMejor.createRow(i + 3);
-                row.createCell(0).setCellValue(i + 1);
-                row.createCell(1).setCellValue(mejor.getElementoPermutaciones(i));
+            if (!corridas.isEmpty()) {
+                int numGeneraciones = corridas.get(0).getHistorialFitness().size();
+                for (int gen = 0; gen < numGeneraciones; gen++) {
+                    Row row = sheetEvolucion.createRow(gen + 1);
+                    row.createCell(0).setCellValue(gen + 1); 
+                    
+                    for (int c = 0; c < corridas.size(); c++) {
+                        long fitnessEnEsaGen = corridas.get(c).getHistorialFitness().get(gen);
+                        row.createCell(c + 1).setCellValue(fitnessEnEsaGen);
+                    }
+                }
             }
 
-            // Autoajustar columnas
-            for (int i = 0; i < columnasPoblacion.length; i++) {
-                sheetPoblacion.autoSizeColumn(i);
+            // --- HOJA 3: DETALLE POBLACIONES ---
+            Sheet sheetDetalle = workbook.createSheet("Detalle Poblaciones");
+            String[] headersDetalle = {"Corrida", "Individuo Nro", "Costo (Fitness)", "Ruta (Permutación)"};
+            
+            Row headerRowDetalle = sheetDetalle.createRow(0);
+            for (int i = 0; i < headersDetalle.length; i++) {
+                headerRowDetalle.createCell(i).setCellValue(headersDetalle[i]);
             }
 
-            // Escribir el archivo
+            int rowIdx = 1; 
+            for (int numCorrida = 0; numCorrida < corridas.size(); numCorrida++) {
+                ResultadoCorrida corrida = corridas.get(numCorrida);
+                List<Individuo> poblacion = corrida.getPoblacionFinal();
+
+                for (int i = 0; i < poblacion.size(); i++) {
+                    Individuo ind = poblacion.get(i);
+                    Row row = sheetDetalle.createRow(rowIdx++);
+                    
+                    row.createCell(0).setCellValue("Corrida " + (numCorrida + 1));
+                    row.createCell(1).setCellValue(i + 1);
+                    row.createCell(2).setCellValue(ind.getFitness(matriz));
+                    row.createCell(3).setCellValue(obtenerRutaString(ind));
+                }
+            }
+
+            for (int i = 0; i < headersDetalle.length; i++) {
+                sheetDetalle.autoSizeColumn(i);
+            }
+
+            // --- GUARDAR ARCHIVO ---
             try (FileOutputStream fileOut = new FileOutputStream(nombreArchivo)) {
                 workbook.write(fileOut);
             }
-            System.out.println("Archivo Excel generado exitosamente: " + nombreArchivo);
+            System.out.println("Excel generado con éxito en: " + nombreArchivo);
 
         } catch (IOException e) {
             System.err.println("Error al exportar a Excel: " + e.getMessage());
@@ -66,53 +113,8 @@ public class ExportadorResultados {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < ind.getSizePermutacion(); i++) {
             sb.append(ind.getElementoPermutaciones(i));
-            if (i < ind.getSizePermutacion() - 1)
-                sb.append(" -> ");
+            if (i < ind.getSizePermutacion() - 1) sb.append(" -> ");
         }
         return sb.toString();
-    }
-
-    public static void exportarConsolidado(List<ResultadoCorrida> corridas, String nombreArchivo) {
-        try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheetResumen = workbook.createSheet("Resumen Estadístico");
-
-            // Encabezados
-            Row header = sheetResumen.createRow(0);
-            header.createCell(0).setCellValue("Métrica");
-            header.createCell(1).setCellValue("Valor");
-
-            // Calcular Estadísticas
-            double promedioFitness = corridas.stream().mapToLong(ResultadoCorrida::getMejorFitness).average().orElse(0);
-            double promedioSoluciones = corridas.stream().mapToLong(ResultadoCorrida::getSolucionesGeneradas).average()
-                    .orElse(0);
-
-            Row row1 = sheetResumen.createRow(1);
-            row1.createCell(0).setCellValue("Fitness Promedio");
-            row1.createCell(1).setCellValue(promedioFitness);
-
-            Row row2 = sheetResumen.createRow(2);
-            row2.createCell(0).setCellValue("Promedio Soluciones Generadas");
-            row2.createCell(1).setCellValue(promedioSoluciones);
-
-            // Hoja de datos crudos
-            Sheet sheetDatos = workbook.createSheet("Datos de Corridas");
-            Row hDatos = sheetDatos.createRow(0);
-            hDatos.createCell(0).setCellValue("Corrida");
-            hDatos.createCell(1).setCellValue("Mejor Fitness");
-            hDatos.createCell(2).setCellValue("Soluciones");
-
-            for (int i = 0; i < corridas.size(); i++) {
-                Row r = sheetDatos.createRow(i + 1);
-                r.createCell(0).setCellValue(i + 1);
-                r.createCell(1).setCellValue(corridas.get(i).getMejorFitness());
-                r.createCell(2).setCellValue(corridas.get(i).getSolucionesGeneradas());
-            }
-
-            try (FileOutputStream fileOut = new FileOutputStream(nombreArchivo)) {
-                workbook.write(fileOut);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }

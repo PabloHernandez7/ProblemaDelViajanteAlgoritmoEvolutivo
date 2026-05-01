@@ -64,15 +64,11 @@ public class Main {
         }
 
         // 5. Consolidación de datos
-        ExportadorResultados.exportarConsolidado(todasLasCorridas, "Evaluacion_Experimental.xlsx");
+        ExportadorResultados.exportarConsolidado(todasLasCorridas, matrizCostos, "Evaluacion_Experimental.xlsx");
         System.out.println("Evaluación finalizada con éxito. Excel generado.");
     }
 
-    // MÉTODOS AUXILIARES
 
-    /**
-     * Genera una lista de N individuos con permutaciones aleatorias.
-     */
     private static List<Individuo> generarPoblacionInicial(int nCities, int nInd) {
         List<Individuo> poblacion = new ArrayList<>();
         ArrayList<Integer> base = new ArrayList<>(nCities);

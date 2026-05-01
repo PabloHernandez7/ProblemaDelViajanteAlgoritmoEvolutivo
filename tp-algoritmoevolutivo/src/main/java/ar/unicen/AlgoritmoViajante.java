@@ -63,7 +63,7 @@ public class AlgoritmoViajante {
             historial.add(obtenerMejorFitness(poblacion));
         }
 
-        return new ResultadoCorrida(historial.get(historial.size() - 1), solucionesGeneradas, historial);
+        return new ResultadoCorrida(historial.get(historial.size() - 1), solucionesGeneradas, historial, poblacion);
     }
 
     private long obtenerMejorFitness(List<Individuo> p) {
