@@ -1,6 +1,10 @@
 package ar.unicen;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -9,77 +13,152 @@ import java.util.Random;
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) {
-        // 1. Configuración de hiperparámetros
-        int nInd = 100;
-        double probMut = 0.1;
-        double probCruce = 0.8;
-        int maxGen = 1000;
-        Random rm = new Random();
 
-        // 2. Lectura del archivo ATSP
+    // Clase interna para mapear el JSON
+    static class ConfiguracionAG {
+        int nInd;
+        int maxGen;
+        double probCruce;
+        double probMut;
+        String selPadres;
+        String cruce;
+        String mutacion;
+        String selSobrevivientes;
+    }
+
+    public static void main(String[] args) {
+        Random rm = new Random();
         Scanner s = new Scanner(System.in);
-        System.out.println("Escribir el nombre del archivo que desee cargar + su extensión: ");
-        String nombreArchivo = s.nextLine();
+
+        // 1. Lectura de archivos de entrada
+        System.out.println("Escribir el nombre del archivo ATSP (ej: reto_15.atsp): ");
+        String nombreArchivoATSP = s.nextLine();
+
+        System.out.println("Escribir el nombre del archivo JSON de configuraciones (ej: configs.json): ");
+        String nombreArchivoJSON = s.nextLine();
         s.close();
 
-        Path path = Paths.get(nombreArchivo);
+        // 2. Cargar Matriz de Costos
+        Path pathATSP = Paths.get(nombreArchivoATSP);
         int[][] matrizCostos;
         int nCities;
 
         try {
-            // Uso del parser para obtener la instancia del problema
-            ATSPInstance inst = TSPLibATSPParser.parse(path);
+            ATSPInstance inst = TSPLibATSPParser.parse(pathATSP);
             matrizCostos = inst.getCost();
             nCities = inst.getDimension();
-            System.out.println("Archivo cargado: " + inst.getName() + " (Dimension: " + nCities + ")");
+            System.out.println("Instancia cargada: " + inst.getName() + " (" + nCities + " ciudades)");
         } catch (IOException e) {
-            System.out.println("Error crítico al buscar el archivo: " + e.getMessage());
+            System.out.println("Error al cargar el archivo ATSP: " + e.getMessage());
             return;
         }
 
-        // 3. Configuración de variantes a evaluar
-        SeleccionPadresInterface selPadres = new SeleccionPadresTorneo(10, rm);
-        CruceInterface cruce = new CruceOrden();
-        MutacionInterface mutacion = new MutacionMezcla();
-        SeleccionSobrevivientesInterface selSobrevivientes = new SeleccionSobrevivientesRuleta();
-
-        // 4. Ejecución del Diseño Experimental
-        int N = 5; // Mínimo pedido por la cátedra
-        List<ResultadoCorrida> todasLasCorridas = new ArrayList<>();
-
-        System.out.println("Iniciando evaluación experimental (" + N + " corridas)...");
-
-        for (int i = 0; i < N; i++) {
-            System.out.println("Ejecutando corrida " + (i + 1) + " de " + N + "...");
-
-            // Generamos una población inicial nueva e independiente para cada corrida
-            List<Individuo> poblacionInicial = generarPoblacionInicial(nCities, nInd);
-
-            AlgoritmoViajante algoritmo = new AlgoritmoViajante(
-                    maxGen, probMut, probCruce, selPadres, cruce, mutacion, selSobrevivientes, matrizCostos, rm); 
-
-            ResultadoCorrida resultado = algoritmo.ejecutar(poblacionInicial);
-            todasLasCorridas.add(resultado);
+        // 3. Cargar Configuraciones desde JSON
+        List<ConfiguracionAG> listaConfigs = leerConfiguracionesJSON(nombreArchivoJSON);
+        if (listaConfigs.isEmpty()) {
+            System.out.println("No se encontraron configuraciones válidas en el JSON.");
+            return;
         }
 
-        // 5. Consolidación de datos
-        ExportadorResultados.exportarConsolidado(todasLasCorridas, matrizCostos, "Evaluacion_Experimental.xlsx");
-        System.out.println("Evaluación finalizada con éxito. Excel generado.");
+        // 4. Ejecución del Diseño Experimental
+        int N = 5; // Corridas por configuración
+        String directorioSalida = "target/resultados/";
+        try {
+            Files.createDirectories(Paths.get(directorioSalida));
+        } catch (IOException e) {
+            System.out.println("Error al crear el directorio de salida: " + e.getMessage());
+            return;
+        }
+
+        for (int i = 0; i < listaConfigs.size(); i++) {
+            ConfiguracionAG config = listaConfigs.get(i);
+            System.out.println("\n   Iniciando Configuración " + (i + 1) + " de " + listaConfigs.size() + "   ");
+            
+            // Instanciar componentes dinámicamente
+            SeleccionPadresInterface selPadres = factorySelPadres(config.selPadres, rm);
+            CruceInterface cruce = factoryCruce(config.cruce);
+            MutacionInterface mutacion = factoryMutacion(config.mutacion);
+            SeleccionSobrevivientesInterface selSobrevivientes = factorySelSobrevivientes(config.selSobrevivientes);
+
+            List<ResultadoCorrida> resultadosDeConfiguracion = new ArrayList<>();
+
+            for (int j = 0; j < N; j++) {
+                System.out.println("  Ejecutando corrida " + (j + 1) + " de " + N + "...");
+                
+                List<Individuo> poblacionInicial = generarPoblacionInicial(nCities, config.nInd);
+
+                AlgoritmoViajante algoritmo = new AlgoritmoViajante(
+                        config.maxGen, config.probMut, config.probCruce, 
+                        selPadres, cruce, mutacion, selSobrevivientes, matrizCostos, rm);
+
+                ResultadoCorrida resultado = algoritmo.ejecutar(poblacionInicial);
+                resultadosDeConfiguracion.add(resultado);
+            }
+
+            // 5. Exportación
+            String nombreArchivo = generarNombreArchivo(config, i + 1);
+            String rutaCompletaExcel = directorioSalida + nombreArchivo;
+            
+            ExportadorResultados.exportarConsolidado(resultadosDeConfiguracion, matrizCostos, rutaCompletaExcel);
+        }
+
+        System.out.println("\nProceso finalizado. Los archivos se guardaron en la carpeta: " + directorioSalida);
     }
 
+    //CARGA JSON
+
+    private static List<ConfiguracionAG> leerConfiguracionesJSON(String nombreArchivo) {
+        try {
+            String contenido = new String(Files.readAllBytes(Paths.get(nombreArchivo)));
+            Gson gson = new Gson();
+            Type listType = new TypeToken<ArrayList<ConfiguracionAG>>(){}.getType();
+            return gson.fromJson(contenido, listType);
+        } catch (Exception e) {
+            System.err.println("Error leyendo el archivo JSON: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+
+    //Factories de cada configuracion
+    private static SeleccionPadresInterface factorySelPadres(String nombre, Random rm) {
+        if (nombre.equalsIgnoreCase("Torneo")) return new SeleccionPadresTorneo(10, rm);
+        if (nombre.equalsIgnoreCase("Ruleta")) return new SeleccionRuleta();
+        throw new IllegalArgumentException("Seleccion de Padres no soportada: " + nombre);
+    }
+
+    private static CruceInterface factoryCruce(String nombre) {
+        if (nombre.equalsIgnoreCase("Orden")) return new CruceOrden();
+        if (nombre.equalsIgnoreCase("PMX")) return new CrucePMX();
+        throw new IllegalArgumentException("Crossover no soportado: " + nombre);
+    }
+
+    private static MutacionInterface factoryMutacion(String nombre) {
+        if (nombre.equalsIgnoreCase("Mezcla")) return new MutacionMezcla();
+        if (nombre.equalsIgnoreCase("Intercambio")) return new MutacionIntercambio();
+        throw new IllegalArgumentException("Mutación no soportada: " + nombre);
+    }
+
+    private static SeleccionSobrevivientesInterface factorySelSobrevivientes(String nombre) {
+        if (nombre.equalsIgnoreCase("Ruleta")) return new SeleccionSobrevivientesRuleta();
+        if (nombre.equalsIgnoreCase("Steady")) return new SeleccionSobrevivientesSteady();
+        throw new IllegalArgumentException("Selección de Sobrevivientes no soportada: " + nombre);
+    }
+
+
+    private static String generarNombreArchivo(ConfiguracionAG c, int id) {
+        return String.format("Conf%d_Pop%d_Gen%d_Cx%.2f_Mut%.2f_%s_%s.xlsx", 
+                id, c.nInd, c.maxGen, c.probCruce, c.probMut, c.cruce, c.mutacion);
+    }
 
     private static List<Individuo> generarPoblacionInicial(int nCities, int nInd) {
         List<Individuo> poblacion = new ArrayList<>();
         ArrayList<Integer> base = new ArrayList<>(nCities);
-        
-        for (int i = 0; i < nCities; i++) {
-            base.add(i);
-        }
+        for (int i = 0; i < nCities; i++) base.add(i);
 
         for (int i = 0; i < nInd; i++) {
             Individuo ind = new Individuo(new ArrayList<>(base));
-            ind.permutar(); // Mezcla aleatoria
+            ind.permutar();
             poblacion.add(ind);
         }
         return poblacion;

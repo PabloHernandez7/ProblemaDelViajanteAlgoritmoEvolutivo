@@ -1,0 +1,22 @@
+[
+  {
+    "nInd": 100,
+    "maxGen": 1000,
+    "probCruce": 0.8,
+    "probMut": 0.1,
+    "selPadres": "Torneo",
+    "cruce": "Orden",
+    "mutacion": "Mezcla",
+    "selSobrevivientes": "Ruleta"
+  },
+  {
+    "nInd": 100,
+    "maxGen": 1000,
+    "probCruce": 0.9,
+    "probMut": 0.2,
+    "selPadres": "Ruleta",
+    "cruce": "PMX",
+    "mutacion": "Intercambio",
+    "selSobrevivientes": "Steady"
+  }
+]
