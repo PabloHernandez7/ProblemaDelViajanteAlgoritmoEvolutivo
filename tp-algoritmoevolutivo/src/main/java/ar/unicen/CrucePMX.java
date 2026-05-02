@@ -19,9 +19,6 @@ public class CrucePMX implements CruceInterface{
             pc1 = aux;
         }
 
-        System.err.println("PC1: " + pc1);
-        System.err.println("PC2: " + pc2);
-
         List<Integer> subListP1 = ind1.getCopiaSubList(pc1, pc2);
         List<Integer> permutacionesHijo = new ArrayList<>(Collections.nCopies(sizePermutacion, -1)); //Relleno con -1 los valores ajenos a la sublist
         

@@ -14,16 +14,18 @@ import java.util.Scanner;
 
 public class Main {
 
-    // Clase interna para mapear el JSON
+    // Clase para el JSON
     static class ConfiguracionAG {
         int nInd;
         int maxGen;
         double probCruce;
         double probMut;
         String selPadres;
+        int kTorneo;
         String cruce;
         String mutacion;
         String selSobrevivientes;
+        int nSteady;
     }
 
     public static void main(String[] args) {
@@ -62,7 +64,15 @@ public class Main {
 
         // 4. Ejecución del Diseño Experimental
         int N = 5; // Corridas por configuración
-        String directorioSalida = "target/resultados/";
+
+        String nombreBase = Paths.get(nombreArchivoATSP).getFileName().toString();
+        String nombreProblema = nombreBase.contains(".") ? 
+                                nombreBase.substring(0, nombreBase.lastIndexOf('.')) : 
+                                nombreBase;
+
+        // Definimos la ruta: target/results/resultsNombreProblema
+        String directorioSalida = "target/results/results" + nombreProblema + "/";
+
         try {
             Files.createDirectories(Paths.get(directorioSalida));
         } catch (IOException e) {
@@ -74,17 +84,15 @@ public class Main {
             ConfiguracionAG config = listaConfigs.get(i);
             System.out.println("\n   Iniciando Configuración " + (i + 1) + " de " + listaConfigs.size() + "   ");
             
-            // Instanciar componentes dinámicamente
-            SeleccionPadresInterface selPadres = factorySelPadres(config.selPadres, rm);
+            SeleccionPadresInterface selPadres = factorySelPadres(config.selPadres, rm, config.kTorneo);
             CruceInterface cruce = factoryCruce(config.cruce);
             MutacionInterface mutacion = factoryMutacion(config.mutacion);
-            SeleccionSobrevivientesInterface selSobrevivientes = factorySelSobrevivientes(config.selSobrevivientes);
+            SeleccionSobrevivientesInterface selSobrevivientes = factorySelSobrevivientes(config.selSobrevivientes, config.nSteady);
 
             List<ResultadoCorrida> resultadosDeConfiguracion = new ArrayList<>();
 
             for (int j = 0; j < N; j++) {
                 System.out.println("  Ejecutando corrida " + (j + 1) + " de " + N + "...");
-                
                 List<Individuo> poblacionInicial = generarPoblacionInicial(nCities, config.nInd);
 
                 AlgoritmoViajante algoritmo = new AlgoritmoViajante(
@@ -96,17 +104,16 @@ public class Main {
             }
 
             // 5. Exportación
-            String nombreArchivo = generarNombreArchivo(config, i + 1);
-            String rutaCompletaExcel = directorioSalida + nombreArchivo;
+            String nombreArchivoExcel = generarNombreArchivo(config, i + 1);
+            String rutaFinal = directorioSalida + nombreArchivoExcel;
             
-            ExportadorResultados.exportarConsolidado(resultadosDeConfiguracion, matrizCostos, rutaCompletaExcel);
+            ExportadorResultados.exportarConsolidado(resultadosDeConfiguracion, matrizCostos, rutaFinal);
         }
 
         System.out.println("\nProceso finalizado. Los archivos se guardaron en la carpeta: " + directorioSalida);
     }
 
-    //CARGA JSON
-
+    //CARGA JSON   
     private static List<ConfiguracionAG> leerConfiguracionesJSON(String nombreArchivo) {
         try {
             String contenido = new String(Files.readAllBytes(Paths.get(nombreArchivo)));
@@ -120,9 +127,9 @@ public class Main {
     }
 
 
-    //Factories de cada configuracion
-    private static SeleccionPadresInterface factorySelPadres(String nombre, Random rm) {
-        if (nombre.equalsIgnoreCase("Torneo")) return new SeleccionPadresTorneo(10, rm);
+    //FACTORIES
+    private static SeleccionPadresInterface factorySelPadres(String nombre, Random rm, int kTorneo) {
+        if (nombre.equalsIgnoreCase("Torneo")) return new SeleccionPadresTorneo(kTorneo, rm); 
         if (nombre.equalsIgnoreCase("Ruleta")) return new SeleccionRuleta();
         throw new IllegalArgumentException("Seleccion de Padres no soportada: " + nombre);
     }
@@ -139,12 +146,11 @@ public class Main {
         throw new IllegalArgumentException("Mutación no soportada: " + nombre);
     }
 
-    private static SeleccionSobrevivientesInterface factorySelSobrevivientes(String nombre) {
+    private static SeleccionSobrevivientesInterface factorySelSobrevivientes(String nombre, int nSteady) {
         if (nombre.equalsIgnoreCase("Ruleta")) return new SeleccionSobrevivientesRuleta();
-        if (nombre.equalsIgnoreCase("Steady")) return new SeleccionSobrevivientesSteady();
+        if (nombre.equalsIgnoreCase("Steady")) return new SeleccionSobrevivientesSteady(nSteady); 
         throw new IllegalArgumentException("Selección de Sobrevivientes no soportada: " + nombre);
     }
-
 
     private static String generarNombreArchivo(ConfiguracionAG c, int id) {
         return String.format("Conf%d_Pop%d_Gen%d_Cx%.2f_Mut%.2f_%s_%s.xlsx", 

@@ -1,0 +1,62 @@
+[
+  {
+    "nInd": 100,
+    "maxGen": 1000,
+    "probCruce": 0.85,
+    "probMut": 0.1,
+    "kTorneo": 5,
+    "nSteady": 30,
+    "selPadres": "Torneo",
+    "cruce": "Orden",
+    "mutacion": "Mezcla",
+    "selSobrevivientes": "Steady"
+  },
+  {
+    "nInd": 100,
+    "maxGen": 1000,
+    "probCruce": 0.85,
+    "probMut": 0.1,
+    "kTorneo": 5,
+    "nSteady": 30,
+    "selPadres": "Ruleta",
+    "cruce": "PMX",
+    "mutacion": "Intercambio",
+    "selSobrevivientes": "Ruleta"
+  },
+  {
+    "nInd": 100,
+    "maxGen": 1000,
+    "probCruce": 0.85,
+    "probMut": 0.1,
+    "kTorneo": 5,
+    "nSteady": 30,
+    "selPadres": "Torneo",
+    "cruce": "PMX",
+    "mutacion": "Mezcla",
+    "selSobrevivientes": "Ruleta"
+  },
+  {
+    "nInd": 100,
+    "maxGen": 1000,
+    "probCruce": 0.85,
+    "probMut": 0.1,
+    "kTorneo": 5,
+    "nSteady": 30,
+    "selPadres": "Ruleta",
+    "cruce": "Orden",
+    "mutacion": "Intercambio",
+    "selSobrevivientes": "Steady"
+  },
+  {
+    "nInd": 100,
+    "maxGen": 1000,
+    "probCruce": 0.85,
+    "probMut": 0.1,
+    "kTorneo": 5,
+    "nSteady": 30,
+    "selPadres": "Torneo",
+    "cruce": "Orden",
+    "mutacion": "Intercambio",
+    "selSobrevivientes": "Ruleta"
+  }
+]
