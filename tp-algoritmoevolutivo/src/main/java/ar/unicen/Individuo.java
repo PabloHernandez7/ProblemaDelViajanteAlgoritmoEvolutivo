@@ -37,6 +37,7 @@ public class Individuo {
             permutaciones.set(inic, segundoElemento);
             subList.remove(0);
         }
+        flagFitness = false; // Agregado por seguridad: si modificás la lista, el fitness debe recalcularse
     }
 
     public void permutar(){
@@ -53,12 +54,17 @@ public class Individuo {
     }
 
     private long calcularCosto(int[][] matriz){
-        int aux = 0;
+        long aux = 0;
         for (int i = 0; i < permutaciones.size() - 1; i++ ){
             int fila = permutaciones.get(i);
             int column = permutaciones.get(i+1);
             aux = aux + matriz[fila][column];
         }
+        
+        int ultimaCiudad = permutaciones.get(permutaciones.size() - 1);
+        int primeraCiudad = permutaciones.get(0);
+        aux = aux + matriz[ultimaCiudad][primeraCiudad];
+        
         return aux;
     }
 
