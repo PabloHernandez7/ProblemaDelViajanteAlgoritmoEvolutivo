@@ -14,7 +14,6 @@ import java.util.Scanner;
 
 public class Main {
 
-    // Clase para el JSON
     static class ConfiguracionAG {
         int nInd;
         int maxGen;
@@ -32,7 +31,6 @@ public class Main {
         Random rm = new Random();
         Scanner s = new Scanner(System.in);
 
-        // 1. Lectura de archivos de entrada
         System.out.println("Escribir el nombre del archivo ATSP (ej: reto_15.atsp): ");
         String nombreArchivoATSP = s.nextLine();
 
@@ -40,7 +38,6 @@ public class Main {
         String nombreArchivoJSON = s.nextLine();
         s.close();
 
-        // 2. Cargar Matriz de Costos
         Path pathATSP = Paths.get(nombreArchivoATSP);
         int[][] matrizCostos;
         int nCities;
@@ -55,23 +52,20 @@ public class Main {
             return;
         }
 
-        // 3. Cargar Configuraciones desde JSON
         List<ConfiguracionAG> listaConfigs = leerConfiguracionesJSON(nombreArchivoJSON);
         if (listaConfigs.isEmpty()) {
             System.out.println("No se encontraron configuraciones válidas en el JSON.");
             return;
         }
 
-        // 4. Ejecución del Diseño Experimental
-        int N = 5; // Corridas por configuración
+        int N = 5; 
 
         String nombreBase = Paths.get(nombreArchivoATSP).getFileName().toString();
         String nombreProblema = nombreBase.contains(".") ? 
                                 nombreBase.substring(0, nombreBase.lastIndexOf('.')) : 
                                 nombreBase;
 
-        // Definimos la ruta: target/results/resultsNombreProblema
-        String directorioSalida = "target/results/results" + nombreProblema + "/";
+        String directorioSalida = "target/results/results_" + nombreProblema + "/";
 
         try {
             Files.createDirectories(Paths.get(directorioSalida));
@@ -79,6 +73,8 @@ public class Main {
             System.out.println("Error al crear el directorio de salida: " + e.getMessage());
             return;
         }
+
+        List<ResumenConfiguracion> rankingGlobal = new ArrayList<>();
 
         for (int i = 0; i < listaConfigs.size(); i++) {
             ConfiguracionAG config = listaConfigs.get(i);
@@ -103,17 +99,28 @@ public class Main {
                 resultadosDeConfiguracion.add(resultado);
             }
 
-            // 5. Exportación
+            double promF = resultadosDeConfiguracion.stream().mapToLong(ResultadoCorrida::getMejorFitness).average().orElse(0);
+            double promS = resultadosDeConfiguracion.stream().mapToLong(ResultadoCorrida::getSolucionesGeneradas).average().orElse(0);
+            double sumaDif = 0;
+            for(ResultadoCorrida r : resultadosDeConfiguracion) {
+                sumaDif += Math.pow(r.getMejorFitness() - promF, 2);
+            }
+            double desv = (N > 1) ? Math.sqrt(sumaDif / (N - 1)) : 0;
+
+            rankingGlobal.add(new ResumenConfiguracion(i + 1, config, promF, desv, promS));
+
             String nombreArchivoExcel = generarNombreArchivo(config, i + 1);
             String rutaFinal = directorioSalida + nombreArchivoExcel;
             
-            ExportadorResultados.exportarConsolidado(resultadosDeConfiguracion, matrizCostos, rutaFinal);
+            ExportadorResultados.exportarConsolidado(resultadosDeConfiguracion, matrizCostos, rutaFinal, config);
         }
+
+        String rutaRanking = directorioSalida + "Ranking_Final_" + nombreProblema + ".xlsx";
+        ExportadorResultados.exportarRanking(rankingGlobal, rutaRanking);
 
         System.out.println("\nProceso finalizado. Los archivos se guardaron en la carpeta: " + directorioSalida);
     }
-
-    //CARGA JSON   
+  
     private static List<ConfiguracionAG> leerConfiguracionesJSON(String nombreArchivo) {
         try {
             String contenido = new String(Files.readAllBytes(Paths.get(nombreArchivo)));
@@ -126,8 +133,6 @@ public class Main {
         }
     }
 
-
-    //FACTORIES
     private static SeleccionPadresInterface factorySelPadres(String nombre, Random rm, int kTorneo) {
         if (nombre.equalsIgnoreCase("Torneo")) return new SeleccionPadresTorneo(kTorneo, rm); 
         if (nombre.equalsIgnoreCase("Ruleta")) return new SeleccionRuleta();
